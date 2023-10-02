@@ -1,3 +1,5 @@
+>WARNING: Only use this fork if you need speckle to run inside Rhino.Compute where [RhinoDoc.ActiveDoc](https://developer.rhino3d.com/api/RhinoCommon/html/P_Rhino_RhinoDoc_ActiveDoc.htm) doesn't exist. See https://speckle.community/t/running-speckle-on-rhino-compute/2225/5
+
 <h1 align="center">
   <img src="https://user-images.githubusercontent.com/2679513/131189167-18ea5fe1-c578-47f6-9785-3748178e4312.png" width="150px"/><br/>
   Speckle | Sharp
