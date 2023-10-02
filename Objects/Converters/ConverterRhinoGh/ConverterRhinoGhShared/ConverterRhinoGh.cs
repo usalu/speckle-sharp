@@ -40,6 +40,19 @@ public partial class ConverterRhinoGh : ISpeckleConverter
     public static string RhinoAppName = HostApplications.Rhino.GetVersion(HostAppVersion.v7);
 #endif
 
+  /// <summary>
+  /// Replacement for Doc
+  /// </summary>
+  public float Tolerance = 0.01f;
+  /// <summary>
+  /// Replacement for Doc
+  /// </summary>
+  public float RelativeTolerance = 0.001f;
+  /// <summary>
+  /// Replacement for Doc
+  /// </summary>
+  public float AngleTolerance = 0.0001f;
+
   [Obsolete]
   public enum MeshSettings
   {
@@ -73,8 +86,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
     return new[] { RhinoAppName };
   }
 
-  public RhinoDoc Doc { get; private set; }
-
   public Dictionary<string, BlockDefinition> BlockDefinitions { get; private set; } = new();
   public Dictionary<string, InstanceDefinition> InstanceDefinitions { get; private set; } = new();
 
@@ -99,11 +110,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
       SelectedMeshSettings = meshSettings;
     if (Settings.TryGetValue("preprocessGeometry", out string setting))
       bool.TryParse(setting, out PreprocessGeometry);
-  }
-
-  public void SetContextDocument(object doc)
-  {
-    Doc = (RhinoDoc)doc;
   }
 
   // speckle user string for custom schemas
@@ -190,10 +196,6 @@ public partial class ConverterRhinoGh : ISpeckleConverter
 
       switch (@object)
       {
-        case RhinoDoc doc: // this is the base commit! Create a collection object to use
-          @base = CollectionToSpeckle(doc);
-          break;
-
         case RH.Point3d o:
           @base = PointToSpeckle(o);
           break;

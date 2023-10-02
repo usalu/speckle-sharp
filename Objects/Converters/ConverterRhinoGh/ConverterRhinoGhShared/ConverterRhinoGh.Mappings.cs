@@ -69,7 +69,7 @@ public partial class ConverterRhinoGh
 
           var wallEdges = wallBrep.DuplicateNakedEdgeCurves(true, false);
           var topBottomEdges = wallEdges
-            .Where(o => Math.Abs(o.PointAtStart.Z - o.PointAtEnd.Z) < Doc.ModelAbsoluteTolerance)
+            .Where(o => Math.Abs(o.PointAtStart.Z - o.PointAtEnd.Z) < Tolerance)
             .OrderBy(o => o.PointAtStart.Z)
             .ToList();
           if (topBottomEdges.Count != 2)
@@ -193,7 +193,7 @@ public partial class ConverterRhinoGh
     bool getBottom = false
   )
   {
-    double tol = Doc.ModelAbsoluteTolerance * 1;
+    double tol = Tolerance * 1;
 
     RH.Curve[] brpCurves = null;
     if (getInterior)

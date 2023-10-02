@@ -60,62 +60,7 @@ public partial class ConverterRhinoGh
 
   public ApplicationObject ViewToNative(View3D view)
   {
-    var appObj = new ApplicationObject(view.id, view.speckle_type) { applicationId = view.applicationId };
-
-    var bakedViewName = string.Empty;
-    RhinoApp.InvokeOnUiThread(
-      (Action)
-        delegate
-        {
-          RhinoView _view = Doc.Views.ActiveView;
-          RhinoViewport viewport = _view.ActiveViewport;
-          viewport.SetProjection(DefinedViewportProjection.Perspective, null, false);
-          var origin = PointToNative(view.origin).Location;
-          var forward = new RH.Vector3d(view.forwardDirection.x, view.forwardDirection.y, view.forwardDirection.z);
-
-          if (view.target != null)
-          {
-            viewport.SetCameraLocations(PointToNative(view.target).Location, origin); // this changes viewport.CameraUp. works for axon from revit if after, for perspective from revit if before
-          }
-          else
-          {
-            viewport.SetCameraLocation(origin, true);
-            viewport.SetCameraDirection(forward, true);
-          }
-          viewport.CameraUp = new RH.Vector3d(view.upDirection.x, view.upDirection.y, view.upDirection.z);
-
-          viewport.Name = view.name;
-
-          /* TODO: debug this and see if it helps better match views from revit
-          // set bounding box
-          var box = BoxToNative(view.boundingBox);
-          BoundingBox boundingBox = new BoundingBox(box.X.Min, box.Y.Min, box.Z.Min, box.X.Max, box.Y.Max, box.Z.Max);
-          viewport.SetClippingPlanes(boundingBox);
-          */
-
-          // set rhino view props if available
-          SetViewParams(viewport, view);
-
-          if (view.isOrthogonal)
-            viewport.ChangeToParallelProjection(true);
-
-          var commitInfo = GetCommitInfo();
-          bakedViewName = ReceiveMode == ReceiveMode.Create ? $"{commitInfo} - {view.name}" : $"{view.name}";
-
-          var res = Doc.NamedViews.Add(bakedViewName, viewport.Id);
-          if (res == -1)
-          {
-            appObj.Update(status: ApplicationObject.State.Failed, logItem: "Could not add named view to doc");
-          }
-          else
-          {
-            var namedView = Doc.NamedViews[res];
-            appObj.Update(bakedViewName, convertedItem: namedView);
-          }
-        }
-    );
-
-    return appObj;
+    return null;
   }
 
   private void AttachViewParams(Base speckleView, ViewInfo view)
@@ -191,17 +136,6 @@ public partial class ConverterRhinoGh
 
     var elevation = ScaleToNative(level.elevation, level.units);
     var plane = new RH.Plane(new RH.Point3d(0, 0, elevation), RH.Vector3d.ZAxis);
-    var res = Doc.NamedConstructionPlanes.Add(bakedLevelName, plane);
-
-    if (res == -1)
-    {
-      appObj.Update(status: ApplicationObject.State.Failed, logItem: "Could not add named construction plane to doc");
-    }
-    else
-    {
-      var namedCPlane = Doc.NamedConstructionPlanes[res];
-      appObj.Update(bakedLevelName, convertedItem: namedCPlane);
-    }
 
     return appObj;
   }

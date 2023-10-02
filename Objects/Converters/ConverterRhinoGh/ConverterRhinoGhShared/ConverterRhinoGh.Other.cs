@@ -27,151 +27,17 @@ public partial class ConverterRhinoGh
   // display, render
   public RH.ObjectAttributes DisplayStyleToNative(DisplayStyle display)
   {
-    var attributes = new RH.ObjectAttributes();
-
-    // color
-    attributes.ObjectColor = Color.FromArgb(display.color);
-    var colorSource = RH.ObjectColorSource.ColorFromObject;
-    if (display["colorSource"] != null)
-      Enum.TryParse(display["colorSource"] as string, out colorSource);
-    attributes.ColorSource = colorSource;
-
-    // line type
-    var lineStyle = Doc.Linetypes.FindName(display.linetype);
-    attributes.LinetypeIndex = lineStyle != null ? lineStyle.Index : 0;
-    var lineSource = RH.ObjectLinetypeSource.LinetypeFromObject;
-    if (display["lineSource"] != null)
-      Enum.TryParse(display["lineSource"] as string, out lineSource);
-    attributes.LinetypeSource = lineSource;
-
-    // plot weight
-    var conversionFactor =
-      display.units == null ? 1 : Units.GetConversionFactor(Units.GetUnitsFromString(display.units), Units.Millimeters);
-    attributes.PlotWeight = display.lineweight * conversionFactor;
-    var weightSource = RH.ObjectPlotWeightSource.PlotWeightFromObject;
-    if (display["weightSource"] != null)
-      Enum.TryParse(display["weightSource"] as string, out weightSource);
-    attributes.PlotWeightSource = weightSource;
-
-    return attributes;
+    return null;
   }
 
   public DisplayStyle DisplayStyleToSpeckle(RH.ObjectAttributes attributes, RH.Layer layer = null)
   {
-    var style = new DisplayStyle { units = Units.Millimeters };
-    int color = Color.LightGray.ToArgb();
-    RH.Linetype lineType = null;
-    double lineWeight = 0;
-    string colorSource = null;
-    string lineTypeSource = null;
-    string weightSource = null;
-
-    // use layer attributes if a layer is provided
-    if (layer != null)
-    {
-      color = layer.Color.ToArgb();
-      lineType = Doc.Linetypes[layer.LinetypeIndex];
-      lineWeight = layer.PlotWeight;
-    }
-    else
-    {
-      // color
-      colorSource = attributes.ColorSource.ToString();
-      switch (attributes.ColorSource)
-      {
-        case RH.ObjectColorSource.ColorFromObject:
-          color = attributes.ObjectColor.ToArgb();
-          break;
-        case RH.ObjectColorSource.ColorFromMaterial:
-          color = Doc.Materials[attributes.MaterialIndex].DiffuseColor.ToArgb();
-          break;
-        default: // use layer color as default
-          color = Doc.Layers[attributes.LayerIndex].Color.ToArgb();
-          break;
-      }
-
-      // line type
-      lineTypeSource = attributes.LinetypeSource.ToString();
-      switch (attributes.LinetypeSource)
-      {
-        case RH.ObjectLinetypeSource.LinetypeFromObject:
-          lineType = Doc.Linetypes[attributes.LinetypeIndex];
-          break;
-        default: // use layer linetype as default
-          lineType = Doc.Linetypes[Doc.Layers[attributes.LayerIndex].LinetypeIndex];
-          break;
-      }
-
-      // line weight
-      weightSource = attributes.PlotWeightSource.ToString();
-      switch (attributes.PlotWeightSource)
-      {
-        case RH.ObjectPlotWeightSource.PlotWeightFromObject:
-          lineWeight = attributes.PlotWeight;
-          break;
-        default: // use layer lineweight as default
-          lineWeight = Doc.Layers[attributes.LayerIndex].PlotWeight;
-          break;
-      }
-    }
-
-    style.color = color;
-    style.lineweight = lineWeight;
-    style.linetype = lineType?.Name ?? "Default";
-
-    // attach rhino specific props
-    if (colorSource != null)
-      style["colorSource"] = colorSource;
-    if (lineTypeSource != null)
-      style["lineSource"] = lineTypeSource;
-    if (weightSource != null)
-      style["weightSource"] = weightSource;
-
-    return style;
+    return null;
   }
 
   public RenderMaterial RenderMaterialToNative(Other.RenderMaterial speckleMaterial)
   {
-    var commitInfo = GetCommitInfo();
-    var speckleName =
-      ReceiveMode == ReceiveMode.Create ? $"{commitInfo} - {speckleMaterial.name}" : $"{speckleMaterial.name}";
-
-    // check if the doc already has a material with speckle material name, or a previously created speckle material
-    //NOTE: Looking up renderMaterials this way is slow, maybe we can create a dictionary?
-    var existing = Doc.RenderMaterials.FirstOrDefault(x => x.Name == speckleName);
-    if (existing != null)
-      return existing;
-
-    RenderMaterial rm;
-    //#if RHINO6
-    var rhinoMaterial = new RH.Material
-    {
-      Name = speckleName,
-      DiffuseColor = Color.FromArgb(speckleMaterial.diffuse),
-      EmissionColor = Color.FromArgb(speckleMaterial.emissive),
-      Transparency = 1 - speckleMaterial.opacity
-    };
-    Doc.Materials.Add(rhinoMaterial);
-    rm = RenderMaterial.CreateBasicMaterial(rhinoMaterial, Doc);
-    //#else
-    //TODO Convert materials as PhysicallyBasedMaterial
-    // var pbrRenderMaterial = RenderContentType.NewContentFromTypeId(ContentUuids.PhysicallyBasedMaterialType, Doc) as Rhino.Render.RenderMaterial;
-    // RH.Material simulatedMaterial = pbrRenderMaterial.SimulatedMaterial(RenderTexture.TextureGeneration.Allow);
-    // RH.PhysicallyBasedMaterial pbr = simulatedMaterial.PhysicallyBased;
-    //
-    // pbr.BaseColor = ARBGToColor4f(speckleMaterial.diffuse);
-    // pbr.Emission = ARBGToColor4f(speckleMaterial.emissive);
-    // pbr.Opacity = speckleMaterial.opacity;
-    // pbr.Metallic = speckleMaterial.metalness;
-    // pbr.Roughness = speckleMaterial.roughness;
-    //
-    // rm = Rhino.Render.RenderMaterial.FromMaterial(pbr.Material, Doc);
-    // rm.Name = speckleName;
-    //#endif
-
-    Doc.RenderMaterials.Add(rm);
-
-    return rm;
+    return null;
   }
 
   public Other.RenderMaterial RenderMaterialToSpeckle(RH.Material material)
@@ -244,46 +110,12 @@ public partial class ConverterRhinoGh
   // hatch
   public Hatch[] HatchToNative(Other.Hatch hatch)
   {
-    var curves = new List<Curve>();
-    curves =
-      hatch.loops != null
-        ? hatch.loops.Select(o => CurveToNative(o.Curve)).ToList()
-        : hatch.curves.Select(o => CurveToNative(o)).ToList();
-    var pattern = Doc.HatchPatterns.FindName(hatch.pattern);
-    int index;
-    if (pattern == null)
-    {
-      // find default hatch pattern
-      pattern = FindDefaultPattern(hatch.pattern);
-      index = Doc.HatchPatterns.Add(pattern);
-    }
-    else
-    {
-      index = pattern.Index;
-    }
-
-    var hatches = Hatch.Create(curves, index, hatch.rotation, hatch.scale, 0.001);
-
-    return hatches;
+    return null;
   }
 
   public Other.Hatch HatchToSpeckle(Hatch hatch)
   {
-    var _hatch = new Other.Hatch();
-
-    // retrieve hatch loops
-    var loops = new List<HatchLoop>();
-    foreach (var outer in hatch.Get3dCurves(true).ToList())
-      loops.Add(new HatchLoop(CurveToSpeckle(outer), HatchLoopType.Outer));
-    foreach (var inner in hatch.Get3dCurves(false).ToList())
-      loops.Add(new HatchLoop(CurveToSpeckle(inner), HatchLoopType.Inner));
-
-    _hatch.loops = loops;
-    _hatch.scale = hatch.PatternScale;
-    _hatch.pattern = Doc.HatchPatterns.ElementAt(hatch.PatternIndex).Name;
-    _hatch.rotation = hatch.PatternRotation;
-
-    return _hatch;
+    return null;
   }
 
   private RH.HatchPattern FindDefaultPattern(string patternName)
@@ -330,7 +162,6 @@ public partial class ConverterRhinoGh
         Base converted = ConvertToSpeckle(obj);
         if (converted != null)
         {
-          converted["layer"] = Doc.Layers[obj.Attributes.LayerIndex].FullPath;
           geometry.Add(converted);
         }
       }
@@ -365,16 +196,6 @@ public partial class ConverterRhinoGh
       return InstanceDefinitions[definitionName];
 
     // update existing def of the same name if necessary
-    var existingDef = Doc.InstanceDefinitions.Find(definitionName);
-    if (existingDef is not null && ReceiveMode == ReceiveMode.Update)
-    {
-      if (!Doc.InstanceDefinitions.Delete(existingDef))
-      {
-        notes.Add($"Existing definition {definitionName} was not updated.");
-        InstanceDefinitions.Add(definitionName, existingDef);
-        return existingDef;
-      }
-    }
 
     // get definition geometry to traverse and base point
     Point3d basePoint = Point3d.Origin;
@@ -418,7 +239,6 @@ public partial class ConverterRhinoGh
           {
             converted.Add(instance.DuplicateGeometry());
             attributes.Add(instance.Attributes);
-            Doc.Objects.Delete(instance);
           }
           else
           {
@@ -452,8 +272,6 @@ public partial class ConverterRhinoGh
       var layerName =
         ReceiveMode == ReceiveMode.Create ? $"{commitInfo}{RH.Layer.PathSeparator}{geoLayer}" : $"{geoLayer}";
       int index = 1;
-      if (layerName != null)
-        GetLayer(Doc, layerName, out index, true);
       attribute.LayerIndex = index;
 
       // display
@@ -488,16 +306,8 @@ public partial class ConverterRhinoGh
     }
 
     // add definition to the doc, and instancedefinition cache
-    int definitionIndex = Doc.InstanceDefinitions.Add(definitionName, string.Empty, basePoint, converted, attributes);
-    if (definitionIndex < 0)
-    {
-      notes.Add("Could not add definition to the document");
-      return null;
-    }
-    var blockDefinition = Doc.InstanceDefinitions[definitionIndex];
-    InstanceDefinitions.Add(definitionName, blockDefinition);
-
-    return blockDefinition;
+    
+    return null;
   }
 
   // Rhino convention seems to order the origin of the vector space last instead of first
@@ -579,21 +389,12 @@ public partial class ConverterRhinoGh
     }
 
     // create the instance
-    Guid instanceId = Doc.Objects.AddInstanceObject(instanceDef.Index, transform, attributes);
 
-    if (instanceId == Guid.Empty)
     {
       appObj.Update(status: ApplicationObject.State.Failed, logItem: "Could not add instance to doc");
       return appObj;
     }
 
-    var _instance = Doc.Objects.FindId(instanceId) as RH.InstanceObject;
-
-    // update appobj
-    appObj.Update(convertedItem: _instance);
-    if (AppendToModelSpace)
-      appObj.CreatedIds.Add(instanceId.ToString());
-    return appObj;
   }
 
   #region instance methods
@@ -731,11 +532,6 @@ public partial class ConverterRhinoGh
           sourceAppProps[scaleProp] = ScaleToNative(value.Value, text.units);
       }
       Utilities.SetApplicationProps(_text, typeof(TextEntity), sourceAppProps);
-      RH.DimensionStyle dimensionStyle = Doc.DimStyles.FindName(
-        sourceAppProps["DimensionStyleName"] as string ?? string.Empty
-      );
-      if (dimensionStyle != null)
-        _text.DimensionStyleId = dimensionStyle.Id;
     }
     return _text;
   }
@@ -905,7 +701,6 @@ public partial class ConverterRhinoGh
         : new Rhino.Geometry.Plane(position, Vector3d.ZAxis);
 
     string dimensionStyleName = sourceAppProps["DimensionStyleName"] as string;
-    RH.DimensionStyle dimensionStyle = Doc.DimStyles.FindName(dimensionStyleName) ?? Doc.DimStyles.Current;
 
     string className = sourceAppProps != null ? sourceAppProps["class"] as string : string.Empty;
     switch (className)
@@ -915,28 +710,6 @@ public partial class ConverterRhinoGh
         var start = PointToNative(linearDimension.measured[0]).Location;
         var end = PointToNative(linearDimension.measured[1]).Location;
         bool isRotated = sourceAppProps["AnnotationType"] as string == AnnotationType.Rotated.ToString() ? true : false;
-        if (isRotated)
-          _dimension = LinearDimension.Create(
-            AnnotationType.Rotated,
-            dimensionStyle,
-            plane,
-            Vector3d.XAxis,
-            start,
-            end,
-            position,
-            0
-          );
-        else
-          _dimension = LinearDimension.Create(
-            AnnotationType.Aligned,
-            dimensionStyle,
-            plane,
-            Vector3d.XAxis,
-            start,
-            end,
-            position,
-            0
-          );
         Utilities.SetApplicationProps(_dimension, typeof(LinearDimension), sourceAppProps);
         break;
       case "AngularDimension":
@@ -946,15 +719,7 @@ public partial class ConverterRhinoGh
         var angularCenter = PointToNative(angleDimension.measured[0].start).Location;
         var angularStart = PointToNative(angleDimension.measured[0].end).Location;
         var angularEnd = PointToNative(angleDimension.measured[1].end).Location;
-        _dimension = AngularDimension.Create(
-          dimensionStyle,
-          plane,
-          Vector3d.XAxis,
-          angularCenter,
-          angularStart,
-          angularEnd,
-          position
-        );
+        
         Utilities.SetApplicationProps(_dimension, typeof(AngularDimension), sourceAppProps);
         break;
       case "OrdinateDimension":
@@ -966,28 +731,7 @@ public partial class ConverterRhinoGh
         var kinkOffset1 = sourceAppProps["KinkOffset1"] as double? ?? 0;
         var kinkOffset2 = sourceAppProps["KinkOffset2"] as double? ?? 0;
         bool isXDirection = VectorToNative(ordinateSpeckle.direction).IsParallelTo(Vector3d.XAxis) == 0 ? false : true;
-        if (isXDirection)
-          _dimension = OrdinateDimension.Create(
-            dimensionStyle,
-            plane,
-            OrdinateDimension.MeasuredDirection.Xaxis,
-            ordinateBase,
-            ordinateDefining,
-            position,
-            kinkOffset1,
-            kinkOffset2
-          );
-        else
-          _dimension = OrdinateDimension.Create(
-            dimensionStyle,
-            plane,
-            OrdinateDimension.MeasuredDirection.Yaxis,
-            ordinateBase,
-            ordinateDefining,
-            position,
-            kinkOffset1,
-            kinkOffset2
-          );
+        
         Utilities.SetApplicationProps(_dimension, typeof(OrdinateDimension), sourceAppProps);
         break;
       case "RadialDimension":
@@ -995,14 +739,7 @@ public partial class ConverterRhinoGh
         if (radialSpeckle == null || radialSpeckle.measured as Geometry.Line == null)
           return null;
         var radialLine = LineToNative(radialSpeckle.measured as Geometry.Line);
-        _dimension = RadialDimension.Create(
-          dimensionStyle,
-          AnnotationType.Radius,
-          plane,
-          radialLine.PointAtStart,
-          radialLine.PointAtEnd,
-          position
-        );
+       
         Utilities.SetApplicationProps(_dimension, typeof(RadialDimension), sourceAppProps);
         break;
       default:
@@ -1010,7 +747,6 @@ public partial class ConverterRhinoGh
         break;
     }
 
-    _dimension.DimensionStyleId = dimensionStyle.Id;
     var textPosition = PointToNative(dimension.textPosition).Location;
     _dimension.TextPosition = new Point2d(
       textPosition.X - _dimension.Plane.OriginX,
@@ -1022,7 +758,6 @@ public partial class ConverterRhinoGh
   public Rhino.Geometry.Dimension DimensionToNative(Dimension dimension)
   {
     Rhino.Geometry.Dimension _dimension = null;
-    var style = Doc.DimStyles.Current;
     var position = PointToNative(dimension.position).Location;
     var plane = new Rhino.Geometry.Plane(position, Vector3d.ZAxis);
 
@@ -1033,15 +768,7 @@ public partial class ConverterRhinoGh
         {
           case Geometry.Line l:
             var radialLine = LineToNative(l);
-            var radialDimension = RadialDimension.Create(
-              style,
-              AnnotationType.Radius,
-              plane,
-              radialLine.PointAtStart,
-              radialLine.PointAtEnd,
-              position
-            );
-            _dimension = radialDimension;
+            
             break;
         }
         break;
@@ -1052,15 +779,6 @@ public partial class ConverterRhinoGh
         var angularCenter = PointToNative(o.measured[0].start).Location;
         var angularStart = PointToNative(o.measured[0].end).Location;
         var angularEnd = PointToNative(o.measured[1].end).Location;
-        _dimension = AngularDimension.Create(
-          style,
-          plane,
-          Vector3d.XAxis,
-          angularCenter,
-          angularStart,
-          angularEnd,
-          position
-        );
         break;
       case DistanceDimension o:
         if (o.measured.Count < 2)
@@ -1071,60 +789,10 @@ public partial class ConverterRhinoGh
         if (o.isOrdinate)
         {
           bool isXDirection = normal.IsParallelTo(Vector3d.XAxis) == 0 ? false : true;
-          if (isXDirection)
-            _dimension = OrdinateDimension.Create(
-              style,
-              plane,
-              OrdinateDimension.MeasuredDirection.Xaxis,
-              start,
-              end,
-              position,
-              0,
-              0
-            );
-          else
-            _dimension = OrdinateDimension.Create(
-              style,
-              plane,
-              OrdinateDimension.MeasuredDirection.Yaxis,
-              start,
-              end,
-              position,
-              0,
-              0
-            );
         }
         else
         {
           var dir = new Vector3d(end.X - start.X, end.Y - start.Y, end.Z - start.Z);
-          if (normal.IsPerpendicularTo(dir))
-          {
-            _dimension = LinearDimension.Create(
-              AnnotationType.Aligned,
-              style,
-              plane,
-              Vector3d.XAxis,
-              start,
-              end,
-              position,
-              0
-            );
-          }
-          else
-          {
-            dir.Rotate(Math.PI / 2, Vector3d.ZAxis);
-            var rotationAngle = Vector3d.VectorAngle(dir, normal);
-            _dimension = LinearDimension.Create(
-              AnnotationType.Rotated,
-              style,
-              plane,
-              Vector3d.XAxis,
-              start,
-              end,
-              position,
-              rotationAngle
-            );
-          }
         }
         break;
     }

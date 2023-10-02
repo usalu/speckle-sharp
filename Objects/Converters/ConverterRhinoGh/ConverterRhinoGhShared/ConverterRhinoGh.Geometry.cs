@@ -461,16 +461,15 @@ public partial class ConverterRhinoGh
   public ICurve CurveToSpeckle(RH.Curve curve, string units = null)
   {
     var u = units ?? ModelUnits;
-    var tolerance = Doc.ModelAbsoluteTolerance;
     RH.Plane pln = RH.Plane.Unset;
-    curve.TryGetPlane(out pln, tolerance);
+    curve.TryGetPlane(out pln, Tolerance);
 
     if (curve is RH.PolyCurve polyCurve)
       return PolycurveToSpeckle(polyCurve, u);
 
-    if (curve.IsCircle(tolerance) && curve.IsClosed)
+    if (curve.IsCircle(Tolerance) && curve.IsClosed)
     {
-      if (curve.TryGetCircle(out var getObj, tolerance))
+      if (curve.TryGetCircle(out var getObj, Tolerance))
       {
         var cir = CircleToSpeckle(getObj, u);
         cir.domain = IntervalToSpeckle(curve.Domain);
@@ -478,9 +477,9 @@ public partial class ConverterRhinoGh
       }
     }
 
-    if (curve.IsArc(tolerance))
+    if (curve.IsArc(Tolerance))
     {
-      if (curve.TryGetArc(out var getObj, tolerance))
+      if (curve.TryGetArc(out var getObj, Tolerance))
       {
         var arc = ArcToSpeckle(getObj, u);
         arc.domain = IntervalToSpeckle(curve.Domain);
@@ -488,9 +487,9 @@ public partial class ConverterRhinoGh
       }
     }
 
-    if (curve.IsEllipse(tolerance) && curve.IsClosed)
+    if (curve.IsEllipse(Tolerance) && curve.IsClosed)
     {
-      if (curve.TryGetEllipse(pln, out var getObj, tolerance))
+      if (curve.TryGetEllipse(pln, out var getObj, Tolerance))
       {
         var ellipse = EllipseToSpeckle(getObj, u);
         ellipse.domain = IntervalToSpeckle(curve.Domain);
@@ -498,7 +497,7 @@ public partial class ConverterRhinoGh
       }
     }
 
-    if (curve.IsLinear(tolerance) || curve.IsPolyline()) // defaults to polyline
+    if (curve.IsLinear(Tolerance) || curve.IsPolyline()) // defaults to polyline
     {
       if (curve.TryGetPolyline(out var getObj))
       {
@@ -732,7 +731,7 @@ public partial class ConverterRhinoGh
 
     if (meshSetting == "Merge Coplanar Faces")
     {
-      m.MergeAllCoplanarFaces(Doc.ModelAbsoluteTolerance, Doc.ModelAngleToleranceRadians);
+      m.MergeAllCoplanarFaces(Tolerance, AngleTolerance);
     }
 #endif
 
@@ -806,13 +805,13 @@ public partial class ConverterRhinoGh
   /// <returns></returns>
   public Brep BrepToSpeckle(RH.Brep brep, string units = null, RH.Mesh previewMesh = null, RenderMaterial mat = null)
   {
-    var tol = Doc.ModelAbsoluteTolerance;
+    var tol = Tolerance;
     //tol = 0;
     var u = units ?? ModelUnits;
     brep.Repair(tol);
 
     if (PreprocessGeometry)
-      brep = BrepEncoder.ToRawBrep(brep, 1.0, Doc.ModelAngleToleranceRadians, Doc.ModelRelativeTolerance);
+      brep = BrepEncoder.ToRawBrep(brep, 1.0, AngleTolerance, RelativeTolerance);
 
     // get display mesh and attach render material to it if it exists
     var displayMesh = previewMesh ?? GetBrepDisplayMesh(brep);
@@ -910,17 +909,7 @@ public partial class ConverterRhinoGh
     // get from settings
     //Settings.TryGetValue("sendMeshSetting", out string meshSetting);
 
-    RH.MeshingParameters mySettings;
-    switch (SelectedMeshSettings)
-    {
-      case MeshSettings.CurrentDoc:
-        mySettings = RH.MeshingParameters.DocumentCurrentSetting(Doc);
-        break;
-      case MeshSettings.Default:
-      default:
-        mySettings = new RH.MeshingParameters(0.05, 0.05);
-        break;
-    }
+    RH.MeshingParameters mySettings = new RH.MeshingParameters(0.05, 0.05);
 
     try
     {
@@ -942,7 +931,7 @@ public partial class ConverterRhinoGh
   public RH.Brep BrepToNative(Brep brep, out List<string> notes)
   {
     notes = new List<string>();
-    var tol = Doc.ModelAbsoluteTolerance;
+    var tol = Tolerance;
     try
     {
       // TODO: Provenance exception is meaningless now, must change for provenance build checks.
