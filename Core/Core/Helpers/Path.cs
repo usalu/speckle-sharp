@@ -23,8 +23,16 @@ public static class SpecklePathProvider
 
   private static string _logFolderName = "Logs";
 
-  private static string _userDataPathEnvVar => "SPECKLE_USERDATA_PATH";
-  private static string? _path => Environment.GetEnvironmentVariable(_userDataPathEnvVar);
+  private static string? _path
+  {
+    get
+    {
+      string semioAssemblyCodeBase = Assembly.GetExecutingAssembly().CodeBase;
+      UriBuilder uri = new (semioAssemblyCodeBase);
+      string path = Uri.UnescapeDataString(uri.Path);
+      return Path.GetDirectoryName(path);
+    }
+  }
 
   /// <summary>
   /// Get the installation path.
@@ -66,14 +74,6 @@ public static class SpecklePathProvider
   public static void OverrideApplicationName(string applicationName)
   {
     _applicationName = applicationName;
-  }
-
-  /// <summary>
-  /// Override the global Speckle application data path.
-  /// </summary>
-  public static void OverrideApplicationDataPath(string? path)
-  {
-    Environment.SetEnvironmentVariable(_userDataPathEnvVar, path);
   }
 
   /// <summary>
